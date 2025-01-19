@@ -33,7 +33,7 @@ class MainActivity : ComponentActivity() {
 		Room.databaseBuilder(
 			applicationContext,
 			AppDatabase::class.java,
-			"notes.db"
+			AppDatabase.NAME
 		).build()
 	}
 

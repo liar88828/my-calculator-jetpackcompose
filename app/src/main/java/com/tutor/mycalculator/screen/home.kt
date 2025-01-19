@@ -1,26 +1,29 @@
 package com.tutor.mycalculator.screen
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -36,6 +39,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +55,8 @@ import com.tutor.mycalculator.Routers
 import com.tutor.mycalculator.persentation.calculate.CalculateEvent
 import com.tutor.mycalculator.persentation.calculate.CalculateState
 import com.tutor.mycalculator.database.entity.Calculator
+import java.time.Instant
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,15 +124,24 @@ fun Home(
 		val h2 = hex2.toIntOrNull(16) ?: 1 // Avoid division by zero
 		(h1 % h2).toString(16).uppercase()
 	}
-	val scrollState = rememberLazyListState()
-	var showCards by remember { mutableStateOf(true) }
-	// Update visibility of cards based on scroll position
-	LaunchedEffect(scrollState.firstVisibleItemIndex) {
-		// Set visibility based on scroll position
-		showCards = scrollState.firstVisibleItemIndex == 0
+	val scrollState = remember { LazyListState() }
+	val firstVisibleItemIndex = remember { derivedStateOf { scrollState.firstVisibleItemIndex } }
+	val firstVisibleItemScrollOffset =
+		remember { derivedStateOf { scrollState.firstVisibleItemScrollOffset } }
+	val visibilityState = remember { MutableTransitionState(true) }
+
+	LaunchedEffect(
+		firstVisibleItemIndex
+	) {
+		val shouldBeVisible = scrollState.firstVisibleItemIndex == 0 &&
+				scrollState.firstVisibleItemScrollOffset < 50 ||
+				firstVisibleItemIndex.value > 2
+		visibilityState.targetState = shouldBeVisible
 	}
 
+
 	Scaffold(
+		modifier = Modifier.fillMaxSize(),
 		topBar = {
 			CenterAlignedTopAppBar(
 				navigationIcon = {
@@ -151,6 +166,12 @@ fun Home(
 				},
 				title = {
 					Text("MyCalculator")
+//					Text(
+////						"test"
+//						firstVisibleItemIndex.value.toString()
+////								+ "_" + shouldBeVisibleHex..isScrollInProgress.toString()
+//								+ "_is_ : " + visibilityState.currentState.toString()
+//					)
 				}
 			)
 		}
@@ -158,17 +179,23 @@ fun Home(
 		Column(
 			modifier = Modifier
 				.padding(screenPadding)
-				.fillMaxWidth()
-				.fillMaxHeight()
+				.fillMaxSize()
 //				.background(Color.Red)
 			,
 			verticalArrangement = Arrangement.spacedBy(10.dp)
 		) {
-			// i want is below column when scroll down will remove use animation
-			AnimatedVisibility(visible = showCards) {
-				Column(
+			Column(
+				modifier
+//					.fillMaxSize()
+//					.verticalScroll(scrollState)
+			) {
+				// Decimal Section
+				AnimatedVisibility(
+					visible = firstVisibleItemIndex.value < 1,
+//					visibleState = visibilityState,
+					enter = fadeIn(),
+					exit = fadeOut()
 				) {
-					// Decimal Section
 					Card(
 						colors = CardDefaults.cardColors(containerColor = Color.Transparent)
 					) {
@@ -216,6 +243,13 @@ fun Home(
 							}
 						}
 					}
+				}
+				AnimatedVisibility(
+					visible = firstVisibleItemIndex.value < 2,
+//					visibleState = visibilityState,
+					enter = fadeIn(),
+					exit = fadeOut()
+				) {
 					// Hexadecimal Section
 					Card(
 						colors = CardDefaults.cardColors(containerColor = Color.Transparent)
@@ -264,7 +298,12 @@ fun Home(
 							}
 						}
 					}
-
+				}
+				AnimatedVisibility(
+					visible = firstVisibleItemIndex.value < 3,
+					enter = fadeIn(),
+					exit = fadeOut()
+				) {
 					Column(
 						modifier.padding(8.dp),
 					) {
@@ -289,6 +328,7 @@ fun Home(
 										Calculator(
 											num1 = num1,
 											num2 = num2,
+											createdAt = Date.from(Instant.now())
 										)
 									)
 								)
@@ -303,16 +343,24 @@ fun Home(
 				}
 			}
 
+
 			LazyColumn(
+				state = scrollState,
 				modifier = Modifier
 					.fillMaxSize()
 					.padding(8.dp),
-				verticalArrangement = Arrangement.spacedBy(16.dp)
+				verticalArrangement = Arrangement.spacedBy(8.dp)
 			) {
 				items(state.data) { item ->
 					NoteItem(
 						onDeleteAction = { eventHandler(CalculateEvent.Delete(item)) },
-						item = item
+						item = item,
+						setValueAction = {
+							num1 = item.num1
+							num2 = item.num2
+							hex1 = item.num1.toIntOrNull()?.toString(16)?.uppercase() ?: ""
+							hex2 = item.num2.toIntOrNull()?.toString(16)?.uppercase() ?: ""
+						}
 					)
 				}
 			}
@@ -324,6 +372,7 @@ fun Home(
 fun NoteItem(
 	onDeleteAction: () -> Unit,
 	item: Calculator,
+	setValueAction: () -> Unit,
 ) {
 	Row(
 		modifier = Modifier
@@ -335,10 +384,10 @@ fun NoteItem(
 		Column(
 			modifier = Modifier.weight(1f)
 		) {
+			Text("Number")
 			Text(
 				text = item.num1,
-				fontSize = 18.sp,
-				fontWeight = FontWeight.SemiBold,
+				fontSize = 16.sp,
 				color = MaterialTheme.colorScheme.onSecondaryContainer
 			)
 
@@ -351,6 +400,35 @@ fun NoteItem(
 			)
 		}
 
+		Column(
+			modifier = Modifier.weight(1f)
+		) {
+			Text("Hex")
+			Text(
+				text = item.num1.toIntOrNull()?.toString(16)?.uppercase() ?: "",
+				fontSize = 16.sp,
+				color = MaterialTheme.colorScheme.onSecondaryContainer
+			)
+
+			Spacer(modifier = Modifier.height(8.dp))
+
+			Text(
+				text = item.num2.toIntOrNull()?.toString(16)?.uppercase() ?: "",
+				fontSize = 16.sp,
+				color = MaterialTheme.colorScheme.onSecondaryContainer
+			)
+		}
+
+		IconButton(
+			onClick = setValueAction
+		) {
+			Icon(
+				imageVector = Icons.Rounded.Check,
+				contentDescription = "Set",
+				modifier = Modifier.size(35.dp),
+				tint = MaterialTheme.colorScheme.onPrimaryContainer
+			)
+		}
 		IconButton(
 			onClick = onDeleteAction
 		) {

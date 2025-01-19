@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CalculatorDao {
 
-	@Query("SELECT * FROM Calculator")
+	@Query("SELECT * FROM Calculator ORDER BY createdAt DESC")
 	fun findAll(): Flow<List<Calculator>>
 
 	@Query("SELECT * FROM Calculator WHERE id IN (:ids)")
