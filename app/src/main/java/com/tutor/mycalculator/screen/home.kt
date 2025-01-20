@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -47,14 +46,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.tutor.mycalculator.Navigation
 import com.tutor.mycalculator.Routers
 import com.tutor.mycalculator.persentation.calculate.CalculateEvent
 import com.tutor.mycalculator.persentation.calculate.CalculateState
 import com.tutor.mycalculator.database.entity.Calculator
+import com.tutor.mycalculator.utils.byteStringToIntFromHexx
+import com.tutor.mycalculator.utils.formatByteArray
+import com.tutor.mycalculator.utils.intToByteArray
 import java.time.Instant
 import java.util.Date
 
@@ -66,12 +70,17 @@ fun Home(
 	eventHandler: (event: CalculateEvent) -> Unit,
 	state: CalculateState,
 ) {
+	// Function to convert an integer to a byte array
+	var test1 by remember { mutableStateOf("") }
 	// Decimal and Hexadecimal inputs
 	var num1 by remember { mutableStateOf("") }
 	var num2 by remember { mutableStateOf("") }
-	//
+	// Hexadecimal Calculations
 	var hex1 by remember { mutableStateOf("") }
 	var hex2 by remember { mutableStateOf("") }
+	// Byte Calculations
+	var byte1 by remember { mutableStateOf("") }
+	var byte2 by remember { mutableStateOf("") }
 	// Decimal Calculations
 	val decimalResultAdd = remember(num1, num2) {
 		val n1 = num1.toIntOrNull() ?: 0
@@ -124,10 +133,35 @@ fun Home(
 		val h2 = hex2.toIntOrNull(16) ?: 1 // Avoid division by zero
 		(h1 % h2).toString(16).uppercase()
 	}
+	// Byte Calculations
+//	val byteResultAdd = remember(byte1, byte2) {
+//		val b1 = byte1.toIntOrNull()?.coerceIn(0..255) ?: 0 // Ensure valid byte
+//		val b2 = byte2.toIntOrNull()?.coerceIn(0..255) ?: 0
+//		((b1 + b2) % 256).toString() // Keep result in byte range
+//	}
+//	val byteResultLess = remember(byte1, byte2) {
+//		val b1 = byte1.toIntOrNull()?.coerceIn(0..255) ?: 0
+//		val b2 = byte2.toIntOrNull()?.coerceIn(0..255) ?: 0
+//		((b1 - b2 + 256) % 256).toString() // Ensure non-negative byte
+//	}
+//	val byteResultFold = remember(byte1, byte2) {
+//		val b1 = byte1.toIntOrNull()?.coerceIn(0..255) ?: 0
+//		val b2 = byte2.toIntOrNull()?.coerceIn(0..255) ?: 0
+//		((b1 * b2) % 256).toString()
+//	}
+//	val byteResultDiv = remember(byte1, byte2) {
+//		val b1 = byte1.toIntOrNull()?.coerceIn(0..255) ?: 0
+//		val b2 = byte2.toIntOrNull()?.coerceIn(0..255) ?: 1 // Avoid division by zero
+//		(b1 / b2).toString()
+//	}
+//	val byteResultMod = remember(byte1, byte2) {
+//		val b1 = byte1.toIntOrNull()?.coerceIn(0..255) ?: 0
+//		val b2 = byte2.toIntOrNull()?.coerceIn(0..255) ?: 1 // Avoid division by zero
+//		(b1 % b2).toString()
+//	}
+//
 	val scrollState = remember { LazyListState() }
 	val firstVisibleItemIndex = remember { derivedStateOf { scrollState.firstVisibleItemIndex } }
-	val firstVisibleItemScrollOffset =
-		remember { derivedStateOf { scrollState.firstVisibleItemScrollOffset } }
 	val visibilityState = remember { MutableTransitionState(true) }
 
 	LaunchedEffect(
@@ -190,160 +224,251 @@ fun Home(
 //					.verticalScroll(scrollState)
 			) {
 				// Decimal Section
-				AnimatedVisibility(
-					visible = firstVisibleItemIndex.value < 1,
-//					visibleState = visibilityState,
-					enter = fadeIn(),
-					exit = fadeOut()
-				) {
-					Card(
-						colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-					) {
-						Column(
-							modifier.padding(8.dp),
-							verticalArrangement = Arrangement.spacedBy(10.dp)
-						) {
-							Text("Decimal")
-
-							MyTextField(
-								value = num1,
-								label = "Input Number 1",
-								onValueChange = {
-									num1 = it
-									hex1 = it.toIntOrNull()?.toString(16)?.uppercase() ?: ""
-								}
-							)
-
-							MyTextField(
-								value = num2,
-								label = "Input Number 2",
-								onValueChange = {
-									num2 = it
-									hex2 = it.toIntOrNull()?.toString(16)?.uppercase() ?: ""
-								}
-							)
-
-							Row(
-								modifier = Modifier.fillMaxWidth(),
-								horizontalArrangement = Arrangement.spacedBy(10.dp)
-							) {
-								listOf(
-									"Add" to decimalResultAdd,
-									"Less" to decimalResultLess,
-									"Fold" to decimalResultFold,
-									"Div" to decimalResultDiv,
-									"Mod" to decimalResultMod
-								).forEach { (label, value) ->
-									MyResult(
-										modifier = Modifier.weight(1f),
-										value = value,
-										label = label
-									)
-								}
-							}
-						}
-					}
-				}
-				AnimatedVisibility(
-					visible = firstVisibleItemIndex.value < 2,
-//					visibleState = visibilityState,
-					enter = fadeIn(),
-					exit = fadeOut()
-				) {
-					// Hexadecimal Section
-					Card(
-						colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-					) {
-						Column(
-							modifier.padding(8.dp),
-							verticalArrangement = Arrangement.spacedBy(10.dp)
-						) {
-							Text("Hexadecimal")
-
-							MyTextField(
-								value = hex1,
-								label = "Input Hex 1",
-								onValueChange = {
-									hex1 = it
-									num1 = it.toIntOrNull(16)?.toString() ?: ""
-								}
-							)
-
-							MyTextField(
-								value = hex2,
-								label = "Input Hex 2",
-								onValueChange = {
-									hex2 = it
-									num2 = it.toIntOrNull(16)?.toString() ?: ""
-								}
-							)
-
-							Row(
-								modifier = Modifier.fillMaxWidth(),
-								horizontalArrangement = Arrangement.spacedBy(10.dp)
-							) {
-								listOf(
-									"Add" to hexResultAdd,
-									"Less" to hexResultLess,
-									"Fold" to hexResultFold,
-									"Div" to hexResultDiv,
-									"Mod" to hexResultMod
-								).forEach { (label, value) ->
-									MyResult(
-										modifier = Modifier.weight(1f),
-										value = value,
-										label = label
-									)
-								}
-							}
-						}
-					}
-				}
-				AnimatedVisibility(
-					visible = firstVisibleItemIndex.value < 3,
-					enter = fadeIn(),
-					exit = fadeOut()
+//				AnimatedVisibility(
+//					visible = firstVisibleItemIndex.value < 1,
+////					visibleState = visibilityState,
+//					enter = fadeIn(),
+//					exit = fadeOut()
+//				) {
+				// Decimal Section
+				Card(
+					colors = CardDefaults.cardColors(containerColor = Color.Transparent)
 				) {
 					Column(
 						modifier.padding(8.dp),
+						verticalArrangement = Arrangement.spacedBy(10.dp)
 					) {
-						Button(
-							onClick = {
-								num1 = ""
-								num2 = ""
-								hex1 = ""
-								hex2 = ""
-							},
-							modifier = modifier
-								.fillMaxWidth(),
-							shape = RoundedCornerShape(8.dp), // Round the inner area
-						) {
-							Text("Reset")
-						}
+						Text("Decimal")
 
-						Button(
-							onClick = {
-								eventHandler(
-									CalculateEvent.Save(
-										Calculator(
-											num1 = num1,
-											num2 = num2,
-											createdAt = Date.from(Instant.now())
-										)
-									)
-								)
-							},
-							modifier = modifier
-								.fillMaxWidth(),
-							shape = RoundedCornerShape(8.dp), // Round the inner area
+						MyTextField(
+							value = num1,
+							label = "Input Number 1",
+							onValueChange = {
+								num1 = it
+								hex1 = it.toIntOrNull()?.toString(16)?.uppercase() ?: ""
+								// Convert the input to Byte and update byte1
+								// Convert the input to an integer and then to a byte array
+								val number = it.toIntOrNull() ?: 0 // Safely handle invalid input
+								val byteArray = intToByteArray(number)
+								// Format the byte array into a string with \x prefix
+								byte1 = formatByteArray(byteArray)
+							}
+						)
+
+						MyTextField(
+							value = num2,
+							label = "Input Number 2",
+							onValueChange = {
+								num2 = it
+								hex2 = it.toIntOrNull()?.toString(16)?.uppercase() ?: ""
+								// Convert the input to Byte and update byte1
+								// Convert the input to an integer and then to a byte array
+								val number = it.toIntOrNull() ?: 0 // Safely handle invalid input
+								val byteArray = intToByteArray(number)
+								// Format the byte array into a string with \x prefix
+								byte2 = formatByteArray(byteArray)
+							}
+						)
+
+						Row(
+							modifier = Modifier.fillMaxWidth(),
+							horizontalArrangement = Arrangement.spacedBy(10.dp)
 						) {
-							Text("Save")
+							listOf(
+								"Add" to decimalResultAdd,
+								"Less" to decimalResultLess,
+								"Fold" to decimalResultFold,
+								"Div" to decimalResultDiv,
+								"Mod" to decimalResultMod
+							).forEach { (label, value) ->
+								MyResult(
+									modifier = Modifier.weight(1f),
+									value = value,
+									label = label
+								)
+							}
 						}
 					}
 				}
+//				}
+				// Hexadecimal Section
+//				AnimatedVisibility(
+//					visible = firstVisibleItemIndex.value < 2,
+////					visibleState = visibilityState,
+//					enter = fadeIn(),
+//					exit = fadeOut()
+//				) {
+				// Hexadecimal Section
+				Card(
+					colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+				) {
+					Column(
+						modifier.padding(8.dp),
+						verticalArrangement = Arrangement.spacedBy(10.dp)
+					) {
+						Text("Hexadecimal")
+
+						MyTextField(
+							value = hex1,
+							label = "Input Hex 1",
+							onValueChange = {
+								val myNum = it.toIntOrNull(16)?.toString() ?: ""
+								val number = it.toIntOrNull(16) ?: 0 // Safely handle invalid input
+								val byteArray = intToByteArray(number)
+								num1 = myNum
+								hex1 = it
+								byte1 = formatByteArray(byteArray)
+							}
+						)
+
+						MyTextField(
+							value = hex2,
+							label = "Input Hex 2",
+							onValueChange = {
+								val myNum = it.toIntOrNull(16)?.toString() ?: ""
+								val number = it.toIntOrNull(16) ?: 0 // Safely handle invalid input
+								val byteArray = intToByteArray(number)
+								num2 = myNum
+								hex2 = it
+								byte2 = formatByteArray(byteArray)
+							}
+						)
+
+						Row(
+							modifier = Modifier.fillMaxWidth(),
+							horizontalArrangement = Arrangement.spacedBy(10.dp)
+						) {
+							listOf(
+								"Add" to hexResultAdd,
+								"Less" to hexResultLess,
+								"Fold" to hexResultFold,
+								"Div" to hexResultDiv,
+								"Mod" to hexResultMod
+							).forEach { (label, value) ->
+								MyResult(
+									modifier = Modifier.weight(1f),
+									value = value,
+									label = label
+								)
+							}
+						}
+					}
+				}
+//				}
+				// byte Section
+//				AnimatedVisibility(
+//					visible = firstVisibleItemIndex.value < 1,
+////					visibleState = visibilityState,
+//					enter = fadeIn(),
+//					exit = fadeOut()
+//				) {
+				Card(
+					colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+				) {
+					Column(
+						modifier.padding(8.dp),
+						verticalArrangement = Arrangement.spacedBy(10.dp)
+					) {
+						Text("Bytes ${test1}")
+
+						MyTextField(
+							value = byte1,
+							label = "Input Byte 1",
+							onValueChange = {
+								try {
+									// Convert byte string to integer
+									val number = byteStringToIntFromHexx(it)
+									// Update num1 and hex1 based on the parsed integer
+									num1 = number.toString()
+									hex1 = number.toString(16).uppercase()
+								} catch (e: Exception) {
+									test1 = e.message.toString()
+								}
+								byte1 = it
+							}
+						)
+
+						MyTextField(
+							value = byte2,
+							label = "Input Byte 2",
+							onValueChange = {
+								try {
+									val number = byteStringToIntFromHexx(it)
+									num2 = number.toString()
+									hex2 = number.toString(16).uppercase()
+								} catch (e: Exception) {
+									test1 = e.message.toString()
+								}
+								byte1 = it
+							}
+						)
+//							Row(
+//								modifier = Modifier.fillMaxWidth(),
+//								horizontalArrangement = Arrangement.spacedBy(10.dp)
+//							) {
+//								listOf(
+//									"Add" to byteResultAdd,
+//									"Less" to byteResultLess,
+//									"Fold" to byteResultFold,
+//									"Div" to byteResultDiv,
+//									"Mod" to byteResultMod
+//								).forEach { (label, value) ->
+//									MyResult(
+//										modifier = Modifier.weight(1f),
+//										value = value,
+//										label = label
+//									)
+//								}
+//							}//Row
+//
+					}
+				}
+//				}
+//				AnimatedVisibility(
+//					visible = firstVisibleItemIndex.value < 3,
+//					enter = fadeIn(),
+//					exit = fadeOut()
+//				) {
+				Column(
+					modifier.padding(8.dp),
+				) {
+					Button(
+						onClick = {
+							num1 = ""
+							num2 = ""
+							hex1 = ""
+							hex2 = ""
+							byte1 = ""
+							byte2 = ""
+						},
+						modifier = modifier
+							.fillMaxWidth(),
+						shape = RoundedCornerShape(8.dp), // Round the inner area
+					) {
+						Text("Reset")
+					}
+
+					Button(
+						onClick = {
+							eventHandler(
+								CalculateEvent.Save(
+									Calculator(
+										num1 = num1,
+										num2 = num2,
+										createdAt = Date.from(Instant.now())
+									)
+								)
+							)
+						},
+						modifier = modifier
+							.fillMaxWidth(),
+						shape = RoundedCornerShape(8.dp), // Round the inner area
+					) {
+						Text("Save")
+					}
+				}
 			}
-
-
+//			}
 			LazyColumn(
 				state = scrollState,
 				modifier = Modifier
@@ -487,5 +612,16 @@ private fun MyTextField(
 			focusedIndicatorColor = Color.Transparent,
 			unfocusedIndicatorColor = Color.Transparent
 		)
+	)
+}
+
+@Preview(showBackground = true)
+@Composable
+fun NavigationPrev(modifier: Modifier = Modifier) {
+	Navigation(
+		calculateState = CalculateState(),
+		navController = rememberNavController(),
+		modifier = Modifier,
+		eventHandler = {}
 	)
 }
