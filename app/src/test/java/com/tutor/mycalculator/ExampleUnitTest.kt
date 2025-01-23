@@ -1,5 +1,8 @@
 package com.tutor.mycalculator
 
+import com.tutor.mycalculator.utils.AsciiToNumber
+import com.tutor.mycalculator.utils.NumberToASCII
+import com.tutor.mycalculator.utils.NumberToBytes
 import com.tutor.mycalculator.utils.byteArrayToInt
 import com.tutor.mycalculator.utils.byteArrayToIntFromHex
 import com.tutor.mycalculator.utils.byteStringToIntFromHexx
@@ -18,7 +21,6 @@ class ExampleUnitTest {
 	fun addition_isCorrect() {
 		assertEquals(4, 2 + 2)
 	}
-
 
 	@Test
 	fun byteArray() {
@@ -44,6 +46,35 @@ class ExampleUnitTest {
 		val convertedNumberXX = byteStringToIntFromHexx("/x30/x39")
 //		println("Converted Number from hex string: $convertedNumberXX")
 		assertEquals(12345, convertedNumberXX)
+	}
+
+	@Test
+	fun NumberToASCIITest() {
+		println("-------------")
+		println(NumberToASCII())
+		println("-------------")
+
+	}
+
+	@Test
+	fun NumberToBytesTest() {
+		val result = NumberToBytes("163,188,81,175")
+		println("-------------")
+		println(result)
+		println("-------------")
+		assertEquals("\\xa3\\xbcQ\\xaf", result)
+//
+//
+	}
+
+	@Test
+	fun BytesToNumberTest() {
+		val result = AsciiToNumber("/xa3/xbcQ/xaf")
+		println("-------------")
+		println(result) // Expected output: 163, 188, 81, 175
+		println("-------------")
+		assertEquals("163,188,81,175", result)
+
 	}
 
 }

@@ -21,8 +21,8 @@ import com.tutor.mycalculator.persentation.calculate.CalculateEvent
 import com.tutor.mycalculator.persentation.calculate.CalculateState
 import com.tutor.mycalculator.database.database.AppDatabase
 import com.tutor.mycalculator.repository.CalculatorRepository
-import com.tutor.mycalculator.screen.About
-import com.tutor.mycalculator.screen.Home
+import com.tutor.mycalculator.screen.AsciiScreen
+import com.tutor.mycalculator.screen.HomeScreen
 import com.tutor.mycalculator.screen.Test
 import com.tutor.mycalculator.ui.theme.MyCalculatorTheme
 import com.tutor.mycalculator.viewModel.CalculateViewModel
@@ -80,11 +80,16 @@ fun Navigation(
 		startDestination = Routers.Home
 	) {
 		composable<Routers.Home> {
-			Home(navController, modifier, eventHandler, calculateState)
+			HomeScreen(
+				navController,
+				modifier,
+				eventHandler,
+				calculateState
+			)
 		}
 
-		composable<Routers.About> {
-			About(navController, modifier)
+		composable<Routers.Ascii> {
+			AsciiScreen(navController, modifier)
 		}
 
 		composable<Routers.Test> {
@@ -99,7 +104,7 @@ sealed interface Routers {
 	data object Home : Routers
 
 	@Serializable
-	data object About : Routers
+	data object Ascii : Routers
 
 	@Serializable
 	data object Test : Routers
