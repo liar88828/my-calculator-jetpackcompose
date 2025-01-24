@@ -560,11 +560,25 @@ fun useBinaryCalculations(): Pair<Pair<MutableState<String>, MutableState<String
 		val n2 = bin2.value.toIntOrNull(2) ?: 0
 		(n1 xor n2).toString(2) // Perform XOR operation and convert back to binary
 	}
+	// Convert binary results to decimal
+	val binaryResultAndDecimal = remember(binaryResultAnd) {
+		val result = binaryResultAnd.toIntOrNull(2) ?: 0 // Convert AND result back to decimal
+		result.toString()
+	}
+	val binaryResultXorDecimal = remember(binaryResultXor) {
+		val result = binaryResultXor.toIntOrNull(2) ?: 0 // Convert XOR result back to decimal
+		result.toString()
+	}
+
+
+
 	return Pair(
 		first = bin1 to bin2, // Returning num1 and num2
 		second = mapOf(
 			"And" to binaryResultAnd,
 			"Xor" to binaryResultXor,
+			"And Dec" to binaryResultAndDecimal,
+			"Xor Dec" to binaryResultXorDecimal
 		)
 	)
 }
